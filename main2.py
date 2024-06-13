@@ -33,7 +33,7 @@ class CustomSpeechDataset(Dataset):
         self.data_list, self.labels = self._scan_audio_files(root_dir)
         self.resample = torchaudio.transforms.Resample(orig_freq=44100, new_freq=sample_rate)
         self.sample_rate = sample_rate
-        self.duration = 3
+        self.duration = 2
         if noise_dir:
             self.background_noise = [
                 torchaudio.load(file_name)[0] for file_name in glob(noise_dir + "/*.wav")
@@ -47,15 +47,17 @@ class CustomSpeechDataset(Dataset):
     def __getitem__(self, idx):
         audio_path = self.data_list[idx]
         sample, orig_sample_rate = torchaudio.load(audio_path)
+        label = self.labels[idx]
         if orig_sample_rate != self.sample_rate:
             sample = self.resample(sample)
         if sample.shape[0] > 1:  # 스테레오인 경우 모노로 변환
             sample = torch.mean(sample, dim=0, keepdim=True)
+        aa = sample
         sample = self._pad_or_trim(sample)
-        sample = self._add_background_noise(sample)
+        #print(audio_path)
         if self.transform:
-            sample = self.transform(sample)
-        label = self.labels[idx]
+            sample = self.transform(sample.unsqueeze(0), [label])  # Add channel dimension and labels
+        #print(sample.shape, aa.shape)
         return sample, label
 
     def _scan_audio_files(self, root_dir):
@@ -75,12 +77,14 @@ class CustomSpeechDataset(Dataset):
         return audio_paths, labels
 
     def _pad_or_trim(self, sample):
-        num_samples = int(self.sample_rate * self.duration)  
+        num_samples = int(self.sample_rate * self.duration)
         if sample.shape[1] > num_samples:
             sample = sample[:, :num_samples]
         elif sample.shape[1] < num_samples:
             padding = num_samples - sample.shape[1]
-            sample = torch.nn.functional.pad(sample, (0, padding))
+            pad_left = padding // 2
+            pad_right = padding - pad_left
+            sample = torch.nn.functional.pad(sample, (pad_left, pad_right))
         return sample
 
     def _add_background_noise(self, sample):

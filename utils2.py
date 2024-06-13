@@ -125,7 +125,8 @@ class Preprocess:
             n_fft=n_fft,
             n_mels=n_mels,
         )
-        self.sample_len = sample_rate + sample_rate
+        self.duration = 2
+        self.sample_len = sample_rate * self.duration
         self.specaug = specaug
         self.device = device
         if self.specaug:
@@ -148,17 +149,13 @@ class Preprocess:
                     np.random.uniform(0, 0.1) if labels[idx] != 0 else np.random.uniform(0, 1)
                 )
                 noise = random.choice(self.background_noise).to(self.device)
-                #noise2 = random.choice(self.background_noise)
-                #noise = torch.cat((noise1, noise2), dim=1).to(self.device)  # 두 개의 1초짜리 노이즈를 이어붙임
-                #print(noise.shape)
-                #noise = self._pad_or_trim(noise)
-                #noise = random.choice(self.background_noise).to(self.device)
-                sample_loc = random.randint(0, noise.shape[-1] - (self.sample_len * 3))
-                noise = noise_amp * noise[:, sample_loc : sample_loc + (SR * 3)]
-                #print(noise.shape)
+                sample_loc = random.randint(0, noise.shape[-1] - (self.sample_len * self.duration))
+                noise = noise_amp * noise[:, sample_loc : sample_loc + (16000 * self.duration)]
                 if is_train:
-                    x_shift = int(np.random.uniform(-0.1, 0.1) * (SR + SR // 2))
+                    x_shift = int(np.random.uniform(-0.10, 0.10) * (16000 * self.duration))
                     zero_padding = torch.zeros(1, np.abs(x_shift)).to(self.device)
+                    x = x.to(self.device)
+                    print(x.shape, x_shift)
                     if x_shift < 0:
                         temp_x = torch.cat([zero_padding, x[idx, :, :x_shift]], dim=-1)
                     else:
@@ -167,10 +164,11 @@ class Preprocess:
                 else:  # valid
                     x[idx] = x[idx] + noise
                 x[idx] = torch.clamp(x[idx], -1.0, 1.0)
+
         x = self.feature(x)
         if self.specaug:
             for i in range(x.shape[0]):
-                x[i] = spec_augment(
+                x[i] = self.spec_augment(
                     x[i],
                     self.frequency_masking_para,
                     self.time_masking_para,
@@ -197,6 +195,18 @@ class LogMel:
         self.mel = self.mel.to(self.device)
         output = (self.mel(x) + 1e-6).log()
         return output
+
+    def spec_augment(self, x, frequency_masking_para, time_masking_para, frequency_mask_num, time_mask_num):
+        lenF, lenT = x.shape[1:3]
+        for _ in range(frequency_mask_num):
+            f = int(np.random.uniform(low=0.0, high=frequency_masking_para))
+            f0 = random.randint(0, lenF - f)
+            x[:, f0 : f0 + f, :] = 0
+        for _ in range(time_mask_num):
+            t = int(np.random.uniform(low=0.0, high=time_masking_para))
+            t0 = random.randint(0, lenT - t)
+            x[:, :, t0 : t0 + t] = 0
+        return x
 
 
 class Padding:

@@ -91,6 +91,8 @@ class Trainer:
                 self.model.eval()
                 valid_acc = self.Test(self.valid_dataset, self.valid_loader, augment=True)
                 print("valid acc: %.3f" % (valid_acc))
+            final_model_path = f"weights/bcresnet2_{epoch}.pt"
+            torch.save(self.model.state_dict(), final_model_path)
 
         test_acc = self.Test(self.test_dataset, self.test_loader, augment=False)  # official testset
         print("test acc: %.3f" % (test_acc))
