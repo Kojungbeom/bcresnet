@@ -55,8 +55,10 @@ class CustomSpeechDataset(Dataset):
         aa = sample
         sample = self._pad_or_trim(sample)
         #print(audio_path)
+        #print('aa', sample.shape)
         if self.transform:
-            sample = self.transform(sample.unsqueeze(0), [label])  # Add channel dimension and labels
+            sample = self.transform(sample)  # Add channel dimension and labels
+        #print('bb', sample.shape)
         #print(sample.shape, aa.shape)
         return sample, label
 
@@ -190,14 +192,13 @@ class Trainer:
         valid_dir = os.path.join(self.data_dir, 'valid')
         test_dir = os.path.join(self.data_dir, 'valid')
 
-        transform = transforms.Compose([Padding()])
-        self.train_dataset = CustomSpeechDataset(train_dir, self.noise_dir, transform=transform)
+        self.train_dataset = CustomSpeechDataset(train_dir, self.noise_dir, transform=None)
         self.train_loader = DataLoader(
             self.train_dataset, batch_size=8, shuffle=True, num_workers=0, drop_last=False
         )
-        self.valid_dataset = CustomSpeechDataset(valid_dir, self.noise_dir, transform=transform)
+        self.valid_dataset = CustomSpeechDataset(valid_dir, self.noise_dir, transform=None)
         self.valid_loader = DataLoader(self.valid_dataset, batch_size=8, num_workers=0)
-        self.test_dataset = CustomSpeechDataset(test_dir, self.noise_dir, transform=transform)
+        self.test_dataset = CustomSpeechDataset(test_dir, self.noise_dir, transform=None)
         self.test_loader = DataLoader(self.test_dataset, batch_size=8, num_workers=0)
 
         print(
@@ -220,7 +221,7 @@ class Trainer:
         print("model: BC-ResNet-%.1f" % (self.tau))
         self.model = BCResNets(int(self.tau * 8)).to(self.device)
         # Pre-trained model 불러오기
-        pre_trained_model_path = "bcresnet_199.pt"
+        pre_trained_model_path = "bcresnet2_51.pt"
         self.model.load_state_dict(torch.load(pre_trained_model_path))
         self.model.classifier[-1] = nn.Conv2d(self.model.c[-1], 8, 1).to(self.device)
         for param in self.model.parameters():

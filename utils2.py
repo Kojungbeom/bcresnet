@@ -155,7 +155,7 @@ class Preprocess:
                     x_shift = int(np.random.uniform(-0.10, 0.10) * (16000 * self.duration))
                     zero_padding = torch.zeros(1, np.abs(x_shift)).to(self.device)
                     x = x.to(self.device)
-                    print(x.shape, x_shift)
+                    #print(x.shape, x_shift)
                     if x_shift < 0:
                         temp_x = torch.cat([zero_padding, x[idx, :, :x_shift]], dim=-1)
                     else:
@@ -168,7 +168,7 @@ class Preprocess:
         x = self.feature(x)
         if self.specaug:
             for i in range(x.shape[0]):
-                x[i] = self.spec_augment(
+                x[i] = spec_augment(
                     x[i],
                     self.frequency_masking_para,
                     self.time_masking_para,
