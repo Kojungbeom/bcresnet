@@ -159,6 +159,11 @@ class Trainer:
                 optimizer.step()
                 self.model.zero_grad()
 
+                # 마지막 3개 샘플을 저장하기 위한 코드 추가
+                self.last_samples.append((inputs.cpu(), labels.cpu()))
+                if len(self.last_samples) > 3:  # 최대 3개까지만 유지
+                    self.last_samples.pop(0)
+
             print("cur lr check ... %.4f" % lr)
             with torch.no_grad():
                 self.model.eval()
@@ -167,10 +172,21 @@ class Trainer:
             final_model_path = f"finetune/bcresnet_finetune_{epoch}.pt"
             torch.save(self.model.state_dict(), final_model_path)
 
-
+        self._save_last_samples()
         test_acc = self.Test(self.test_dataset, self.test_loader, augment=False)
         print("test acc: %.3f" % (test_acc))
         print("End.")
+        
+    def _save_last_samples(self):
+        save_dir = "last_samples"
+        os.makedirs(save_dir, exist_ok=True)
+        for i, (inputs, labels) in enumerate(self.last_samples):
+            file_name = f"sample_{i + 1}.wav"
+            file_path = os.path.join(save_dir, file_name)
+
+            # 각 샘플을 저장합니다.
+            torchaudio.save(file_path, inputs[0], 16000)  # 첫 번째 채널만 저장
+            print(f"Saved: {file_path}")
 
     def Test(self, dataset, loader, augment):
         true_count = 0.0
