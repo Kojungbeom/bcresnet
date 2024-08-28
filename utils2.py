@@ -129,6 +129,7 @@ class Preprocess:
         self.sample_len = sample_rate * self.duration
         self.specaug = specaug
         self.device = device
+        self.arg_noise = torchaudio.load('mynoise/arglass_background.wav')[0]
         if self.specaug:
             self.frequency_masking_para = frequency_masking_para
             self.time_masking_para = time_masking_para
@@ -161,6 +162,10 @@ class Preprocess:
                     else:
                         temp_x = torch.cat([x[idx, :, x_shift:], zero_padding], dim=-1)
                     x[idx] = temp_x + noise
+
+                    noise_loc = random.randint(0, self.arg_noise.shape[-1] - (self.sample_len * self.duration))
+                    arg_noise = noise[:, noise_loc : noise_loc + (16000 * self.duration)]
+                    x[idx] = x[idx] + noise
                 else:  # valid
                     x[idx] = x[idx] + noise
                 x[idx] = torch.clamp(x[idx], -1.0, 1.0)
