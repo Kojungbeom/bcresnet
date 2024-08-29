@@ -124,6 +124,8 @@ class Trainer:
         self._load_data()
         self._load_model()
 
+        self.last_samples = []
+
     def __call__(self):
         total_epoch = 200
         warmup_epoch = 5
