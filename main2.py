@@ -167,7 +167,7 @@ class Trainer:
                 self.last_samples.append((inputs.cpu(), labels.cpu()))
                 if len(self.last_samples) > 3:  # 최대 3개까지만 유지
                     self.last_samples.pop(0)
-
+            self._save_last_samples()
             print("cur lr check ... %.4f" % lr)
             with torch.no_grad():
                 self.model.eval()
@@ -176,7 +176,7 @@ class Trainer:
             final_model_path = f"finetune/bcresnet_finetune_{epoch}.pt"
             torch.save(self.model.state_dict(), final_model_path)
 
-        self._save_last_samples()
+        
         test_acc = self.Test(self.test_dataset, self.test_loader, augment=False)
         print("test acc: %.3f" % (test_acc))
         print("End.")
