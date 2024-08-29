@@ -123,7 +123,8 @@ class Trainer:
         self.device = torch.device("cuda:%d" % self.gpu if torch.cuda.is_available() else "cpu")
         self._load_data()
         self._load_model()
-
+        self.class_weights = torch.tensor([7.0, 1.0], dtype=torch.float).to(self.device)  # 0: 7, 1: 1
+        self.criterion = nn.CrossEntropyLoss(weight=self.class_weights)
         self.last_samples = []
 
     def __call__(self):
@@ -158,7 +159,8 @@ class Trainer:
                 labels = labels.to(self.device)
                 inputs = self.preprocess_train(inputs, labels, augment=True)
                 outputs = self.model(inputs)
-                loss = F.cross_entropy(outputs, labels)
+                #loss = F.cross_entropy(outputs, labels)
+                loss = self.criterion(outputs, labels)
                 loss.backward()
                 optimizer.step()
                 self.model.zero_grad()
