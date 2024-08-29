@@ -156,7 +156,7 @@ class Preprocess:
                 noise = noise_amp * noise[:, sample_loc : sample_loc + (16000 * self.duration)]
 
                 # 소리 크기 조절
-                volume_factor = np.random.uniform(0.3, 0.8)  # 소리 크기를 50%에서 80%로 줄임
+                volume_factor = np.random.uniform(0.5, 0.8)  # 소리 크기를 50%에서 80%로 줄임
                 x[idx] = adjust_volume(x[idx], factor=volume_factor)
 
                 if is_train:

@@ -21,12 +21,12 @@ import matplotlib.pyplot as plt
 label_dict = {
     "HiCellico": 0,
     "ZoomIn": 1,
-    "ZoomOut": 2,
-    "detectObject": 3,
-    "ReadText": 4,
-    "unknown" : 5,
-    "_background_noise_": 6,
-    "_silence_" : 7
+    "ZoomOut": 1,
+    "detectObject": 1,
+    "ReadText": 1,
+    "unknown" : 1,
+    "_background_noise_": 1,
+    "_silence_" : 1
 }
 # 새로운 데이터셋 클래스를 정의합니다.
 class CustomSpeechDataset(Dataset):
@@ -249,7 +249,7 @@ class Trainer:
         # Pre-trained model 불러오기
         pre_trained_model_path = "bcresnet2_51.pt"
         self.model.load_state_dict(torch.load(pre_trained_model_path))
-        self.model.classifier[-1] = nn.Conv2d(self.model.c[-1], 8, 1).to(self.device)
+        self.model.classifier[-1] = nn.Conv2d(self.model.c[-1], 2, 1).to(self.device)
         for param in self.model.parameters():
             param.requires_grad = True
 
