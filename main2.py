@@ -188,7 +188,10 @@ class Trainer:
             file_name = f"sample_{i + 1}.wav"
             file_path = os.path.join(save_dir, file_name)
 
-            # 각 샘플을 저장합니다.
+            # 텐서를 2D로 변환
+            if inputs.dim() == 1:
+                inputs = inputs.unsqueeze(0)  # [channels, time] 형태로 변환
+            
             torchaudio.save(file_path, inputs[0], 16000)  # 첫 번째 채널만 저장
             print(f"Saved: {file_path}")
 
