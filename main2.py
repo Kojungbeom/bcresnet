@@ -185,46 +185,18 @@ class Trainer:
         save_dir = "last_samples"
         os.makedirs(save_dir, exist_ok=True)
         for i, (inputs, labels) in enumerate(self.last_samples):
-            file_name = f"sample_{i + 1}.wav"
+            file_name = f"sample_{i + 1}_mel.png"
             file_path = os.path.join(save_dir, file_name)
 
-            # 텐서를 2D로 변환
-            if inputs.dim() == 1:
-                inputs = inputs.unsqueeze(0)  # [channels, time] 형태로 변환
-            
-            torchaudio.save(file_path, inputs[0], 16000)  # 첫 번째 채널만 저장
-            print(f"Saved: {file_path}")
-
-            # STFT 및 Mel-Spectrogram을 플롯하고 저장
-            self._plot_and_save_spectrograms(inputs[0], 16000, save_dir, f"sample_{i + 1}")
-
-    def _plot_and_save_spectrograms(self, waveform, sample_rate, save_dir, prefix):
-        # STFT 계산 및 플롯
-        stft = torch.stft(waveform.squeeze(), n_fft=400, hop_length=160, win_length=400)
-        stft_magnitude = torch.abs(stft).numpy()
-        plt.figure(figsize=(10, 4))
-        plt.title("STFT Magnitude")
-        plt.imshow(np.log(stft_magnitude + 1e-10), aspect='auto', origin='lower')
-        stft_path = os.path.join(save_dir, f"{prefix}_stft.png")
-        plt.savefig(stft_path)
-        plt.close()
-        print(f"Saved: {stft_path}")
-
-        # Mel-Spectrogram 계산 및 플롯
-        mel_spectrogram = torchaudio.transforms.MelSpectrogram(
-            sample_rate=sample_rate,
-            n_fft=400,
-            hop_length=160,
-            n_mels=64
-        )(waveform)
-        mel_spectrogram_db = torchaudio.transforms.AmplitudeToDB()(mel_spectrogram)
-        plt.figure(figsize=(10, 4))
-        plt.title("Mel-Spectrogram (dB)")
-        plt.imshow(mel_spectrogram_db.squeeze().numpy(), aspect='auto', origin='lower', cmap='viridis')
-        mel_path = os.path.join(save_dir, f"{prefix}_mel.png")
-        plt.savefig(mel_path)
-        plt.close()
-        print(f"Saved: {mel_path}")
+            # Mel Spectrogram이므로 그대로 이미지를 플롯하여 저장
+            mel_spectrogram_db = inputs[0].squeeze().numpy()  # Mel Spectrogram을 numpy로 변환
+            plt.figure(figsize=(10, 4))
+            plt.title("Mel-Spectrogram (dB)")
+            plt.imshow(mel_spectrogram_db, aspect='auto', origin='lower', cmap='viridis')
+            plt.colorbar(format="%+2.0f dB")
+            plt.savefig(file_path)
+            plt.close()
+            print(f"Saved Mel-Spectrogram image: {file_path}")
 
     def Test(self, dataset, loader, augment):
         true_count = 0.0

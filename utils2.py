@@ -129,7 +129,7 @@ class Preprocess:
         self.sample_len = sample_rate * self.duration
         self.specaug = specaug
         self.device = device
-        self.arg_noise = torchaudio.load('mynoise/arglass_background.wav')[0]
+        self.arg_noise = torchaudio.load('mynoise/arglass_background.wav')[0][:1].to(self.device)
         if self.specaug:
             self.frequency_masking_para = frequency_masking_para
             self.time_masking_para = time_masking_para
@@ -139,6 +139,8 @@ class Preprocess:
                 "frequency specaug %d %d" % (self.frequency_mask_num, self.frequency_masking_para)
             )
             print("time specaug %d %d" % (self.time_mask_num, self.time_masking_para))
+
+    
 
     def __call__(self, x, labels, augment=True, noise_prob=0.8, is_train=True):
         assert len(x.shape) == 3
@@ -152,6 +154,11 @@ class Preprocess:
                 noise = random.choice(self.background_noise).to(self.device)
                 sample_loc = random.randint(0, noise.shape[-1] - (self.sample_len * self.duration))
                 noise = noise_amp * noise[:, sample_loc : sample_loc + (16000 * self.duration)]
+
+                # 소리 크기 조절
+                volume_factor = np.random.uniform(0.3, 0.8)  # 소리 크기를 50%에서 80%로 줄임
+                x[idx] = adjust_volume(x[idx], factor=volume_factor)
+
                 if is_train:
                     x_shift = int(np.random.uniform(-0.10, 0.10) * (16000 * self.duration))
                     zero_padding = torch.zeros(1, np.abs(x_shift)).to(self.device)
@@ -164,8 +171,8 @@ class Preprocess:
                     x[idx] = temp_x + noise
 
                     noise_loc = random.randint(0, self.arg_noise.shape[-1] - (self.sample_len * self.duration))
-                    arg_noise = noise[:, noise_loc : noise_loc + (16000 * self.duration)]
-                    x[idx] = x[idx] + noise
+                    arg_noise = self.arg_noise[:, noise_loc : noise_loc + (16000 * self.duration)]
+                    x[idx] = x[idx] + arg_noise
                 else:  # valid
                     x[idx] = x[idx] + noise
                 x[idx] = torch.clamp(x[idx], -1.0, 1.0)
@@ -181,6 +188,18 @@ class Preprocess:
                     self.time_mask_num,
                 )
         return x
+
+
+# Gaussian 노이즈 생성 함수
+def add_gaussian_noise(audio, mean=0.0, std=0.005):
+    noise = torch.randn(audio.size()).to(audio.device) * std + mean
+    return audio + noise
+
+# 소리 크기 조절 함수
+def adjust_volume(audio, factor=0.5):
+    # factor가 1보다 작으면 소리가 작아지고, 1보다 크면 소리가 커짐
+    return audio * factor
+
 
 
 class LogMel:
