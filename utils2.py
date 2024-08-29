@@ -173,8 +173,13 @@ class Preprocess:
                     noise_loc = random.randint(0, self.arg_noise.shape[-1] - (self.sample_len * self.duration))
                     arg_noise = self.arg_noise[:, noise_loc : noise_loc + (16000 * self.duration)]
                     x[idx] = x[idx] + arg_noise
+
                 else:  # valid
                     x[idx] = x[idx] + noise
+                    
+                    noise_loc = random.randint(0, self.arg_noise.shape[-1] - (self.sample_len * self.duration))
+                    arg_noise = self.arg_noise[:, noise_loc : noise_loc + (16000 * self.duration)]
+                    x[idx] = x[idx] + arg_noise
                 x[idx] = torch.clamp(x[idx], -1.0, 1.0)
 
         x = self.feature(x)
