@@ -28,6 +28,8 @@ label_dict = {
     "_background_noise_": 1,
     "_silence_" : 1
 }
+duration = 2
+
 # 새로운 데이터셋 클래스를 정의합니다.
 class CustomSpeechDataset(Dataset):
     def __init__(self, root_dir, noise_dir=None, transform=None, sample_rate=16000):
@@ -60,6 +62,7 @@ class CustomSpeechDataset(Dataset):
         #print('aa', sample.shape)
         if self.transform:
             sample = self.transform(sample)  # Add channel dimension and labels
+        sample = self._add_background_noise(sample)
         #print('bb', sample.shape)
         #print(sample.shape, aa.shape)
         return sample, label
@@ -94,12 +97,18 @@ class CustomSpeechDataset(Dataset):
     def _add_background_noise(self, sample):
         if self.background_noise:
             noise = random.choice(self.background_noise)
+            if noise.shape[1] < 16000 * duration:
+                noise = torch.cat([noise] * (16000 * duration // noise.shape[1] + 1), dim=1)
+            elif noise.shape[1] > 16000 * duration:
+                start = random.randint(0, noise.shape[1] - 16000 * duration)
+                noise = noise[:, start : start + 16000 * duration]
+            
             #noise2 = random.choice(self.background_noise)
             #noise = torch.cat((noise1, noise2), dim=1)  # 두 개의 1초짜리 노이즈를 이어붙임
             
             noise = self._pad_or_trim(noise)
-            #print(noise.shape, sample.shape)
-            noise_amp = np.random.uniform(0, 0.5)
+            noise_amp = np.random.uniform(0.5, 1)
+
             sample = sample + noise_amp * noise
             sample = torch.clamp(sample, -1.0, 1.0)
         return sample
