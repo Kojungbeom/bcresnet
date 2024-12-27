@@ -19,14 +19,14 @@ import torch.nn as nn
 import matplotlib.pyplot as plt
 
 label_dict = {
-    "HiCellico": 0,
-    "ZoomIn": 1,
-    "ZoomOut": 1,
-    "detectObject": 1,
-    "ReadText": 1,
-    "unknown" : 1,
-    "_background_noise_": 1,
-    "_silence_" : 1
+    "HiCellico": 1,
+    "ZoomIn": 0,
+    "ZoomOut": 0,
+    "detectObject": 0,
+    "ReadText": 0,
+    "unknown" : 0,
+    "_background_noise_": 0,
+    "_silence_" : 0
 }
 duration = 2
 
@@ -107,7 +107,7 @@ class CustomSpeechDataset(Dataset):
             #noise = torch.cat((noise1, noise2), dim=1)  # 두 개의 1초짜리 노이즈를 이어붙임
             
             noise = self._pad_or_trim(noise)
-            noise_amp = np.random.uniform(0.5, 1)
+            noise_amp = np.random.uniform(0.7, 1)
 
             sample = sample + noise_amp * noise
             sample = torch.clamp(sample, -1.0, 1.0)
@@ -233,9 +233,9 @@ class Trainer:
         self.train_loader = DataLoader(
             self.train_dataset, batch_size=8, shuffle=True, num_workers=0, drop_last=False
         )
-        self.valid_dataset = CustomSpeechDataset(valid_dir, self.noise_dir, transform=None)
+        self.valid_dataset = CustomSpeechDataset(valid_dir, "data/jungbeom_split/valid/_background_noise_", transform=None)
         self.valid_loader = DataLoader(self.valid_dataset, batch_size=8, num_workers=0)
-        self.test_dataset = CustomSpeechDataset(test_dir, self.noise_dir, transform=None)
+        self.test_dataset = CustomSpeechDataset(test_dir, "data/jungbeom_split/valid/_background_noise_", transform=None)
         self.test_loader = DataLoader(self.test_dataset, batch_size=8, num_workers=0)
 
         print(
